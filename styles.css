@@ -1,0 +1,12 @@
+.infobox {
+	text-align: center;
+	width: 500px;
+	max-width: 500px;
+	margin: auto;
+}
+.gamebox {
+	text-align: center;
+	width: 500px;
+	max-width: 1000px;
+	margin: auto;
+}
