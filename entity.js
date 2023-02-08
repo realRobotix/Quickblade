@@ -8,8 +8,6 @@ export default class Entity {
 	width;
 	height;
 	noGravity = false;
-	aPriori = false;
-	actualAPriori;
 	
 	constructor(x, y, w, h) {
 		this.pos = [x, y];
@@ -26,7 +24,7 @@ export default class Entity {
 			if (this.isOnGround()) this.pos[1] = 0;
 		}
 		this.move(this.dx, this.dy);
-		--this.aPriori;
+		if (this.aPriori > 0) --this.aPriori;
 	}
 	
 	isOnGround() {
@@ -38,7 +36,27 @@ export default class Entity {
 	}
 	
 	collide(other) {
-		return this.getAABB().collideBox(other.getAABB());
+		let bb1 = this.getAABB();
+		let bb2 = other.getAABB();
+		
+		let relVel = [1 / Math.abs(other.dx - this.dx), 1 / Math.abs(other.dy - this.dy)];
+		
+		let startX = Math.max(bb1.topLeft[0] + bb1.width, bb2.topLeft[0] + bb2.width) - Math.min(bb1.topLeft[0], bb2.topLeft[0]);
+		let x1 = (startX - bb1.width - bb2.width) * relVel[0];
+		let x2 = startX * relVel[0];
+		if ((x1 < 0 || 1 <= x1) && (x2 < 0 || 1 <= x2) && startX > bb1.width + bb2.width) return false;
+		x1 = Math.max(0, x1);
+		x2 = Math.min(1, x2);
+		
+		let startY = Math.max(bb1.topLeft[1] + bb1.height, bb2.topLeft[1] + bb2.height) - Math.min(bb1.topLeft[1], bb2.topLeft[1]);
+		let y1 = (startY - bb1.height - bb2.height) * relVel[1];
+		let y2 = startY * relVel[1];
+		if ((y1 < 0 || 1 <= y1) && (y2 < 0 || 1 <= y2) && startY > bb1.height + bb2.height) return false;
+		//this.aPriori = 60;
+		y1 = Math.max(0, y1);
+		y2 = Math.min(1, y2);
+		
+		return x1 <= y2 && y1 <= x2;
 	}
 	
 	get x() { return this.pos[0]; }
@@ -56,7 +74,7 @@ export default class Entity {
 	
 	render(ctx, pt) {
 		ctx.globalAlpha = 0.25;
-		ctx.fillStyle = "#FF0000";
+		ctx.fillStyle = this.aPriori > 0 ? "#FFFF00" : "#FF0000";
 		
 		ctx.fillRect(-this.width / 2, 0, this.width, this.height);
 		
