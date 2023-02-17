@@ -1,34 +1,51 @@
 import AABB from "./collision.js";
+import Level from "./level.js";
+
+let COUNTER = 0;
 
 export default class Entity {
 	
 	#pos;
 	#oPos;
 	#vel;
+	#level;
+	#id = COUNTER++;
+	#aPriori = 0;
 	width;
 	height;
 	noGravity = false;
 	
-	constructor(x, y, w, h) {
+	constructor(x, y, w, h, level) {
 		this.pos = [x, y];
 		this.oPos = [this.pos[0], this.pos[1]];
 		this.vel = [0, 0];
 		this.width = w;
 		this.height = h;
+		this.#level = level;
 	}
+	
+	get id() { return this.#id; }
+	
 	
 	tick() {
 		this.oPos = [this.pos[0], this.pos[1]];
+		
+		//let genAABB = this.getAABB().expandTowards(this.vel[0], this.vel[1]);	
+		//let collided = this.#level.getEntitiesIn(genAABB).filter(e => e !== this).find(e => this.collide(e));
+		//if (collided !== undefined) {
+		//	this.#aPriori = 60;
+		//}
+		
 		if (!this.noGravity) {
-			this.vel[1] = this.isOnGround() & this.dy <= 0.0001 ? 0 : this.dy - 0.02;
-			if (this.isOnGround()) this.pos[1] = 0;
+			this.vel[1] = this.isOnGround() && this.dy <= 0.0001 ? 0 : this.dy - 0.02;
+			if (this.isOnGround()) this.pos[1] = 2;
 		}
 		this.move(this.dx, this.dy);
-		if (this.aPriori > 0) --this.aPriori;
+		if (this.#aPriori > 0) --this.#aPriori;
 	}
 	
 	isOnGround() {
-		return this.y <= 0; // TODO collision
+		return this.y <= 2; // TODO collision
 	}
 	
 	getAABB() {
@@ -52,7 +69,6 @@ export default class Entity {
 		let y1 = (startY - bb1.height - bb2.height) * relVel[1];
 		let y2 = startY * relVel[1];
 		if ((y1 < 0 || 1 <= y1) && (y2 < 0 || 1 <= y2) && startY > bb1.height + bb2.height) return false;
-		//this.aPriori = 60;
 		y1 = Math.max(0, y1);
 		y2 = Math.min(1, y2);
 		
@@ -67,14 +83,15 @@ export default class Entity {
 	
 	get dx() { return this.vel[0]; }
 	get dy() { return this.vel[1]; }
+	get level() { return this.#level; }
+	
 	setVelocity(dx, dy) { this.vel = [dx, dy]; }
 	
 	setPos(x, y) { this.pos = [x, y]; }
 	move(dx, dy) { this.pos = [this.x + dx, this.y + dy]; }
 	
 	render(ctx, pt) {
-		ctx.globalAlpha = 0.25;
-		ctx.fillStyle = this.aPriori > 0 ? "#FFFF00" : "#FF0000";
+		ctx.fillStyle = this.#aPriori > 0 ? "#FFFF9f" : "#FF9f9f";
 		
 		ctx.fillRect(-this.width / 2, 0, this.width, this.height);
 		

@@ -18,5 +18,13 @@ export default class AABB {
 		
 		return maxX - minX <= this.width + other.width && maxY - minY <= this.height + other.height;
 	}
+	
+	expandTowards(ex, ey) {
+		let nx = ex < 0 ? this.topLeft[0] + ex : this.topLeft[0];
+		let ny = ey < 0 ? this.topLeft[1] + ey : this.topLeft[1];
+		let nw = ex > 0 ? this.width + ex : this.width;
+		let nh = ey > 0 ? this.height + ey : this.height;
+		return new AABB(nx, ny, nw, nh);
+	}
 
 }
