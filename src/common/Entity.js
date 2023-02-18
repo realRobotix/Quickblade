@@ -40,8 +40,8 @@ export class Entity {
 		this.#oPos = [this.#pos[0], this.#pos[1]];
 		
 		let genAABB = this.getAABB().expandTowards(this.#vel[0], this.#vel[1]);	
-		let collided = this.#level.getEntitiesIn(genAABB).filter(e => e !== this).find(e => this.collide(e));
-		let hasCollided = !!collided;
+		let collided = this.#level.getEntitiesIn(genAABB).filter(e => e !== this).filter(e => this.collide(e));
+		let hasCollided = collided.length > 0;
 		
 		if (!this.noGravity) {
 			let flag = this.isOnGround();
@@ -49,7 +49,11 @@ export class Entity {
 			if (flag) this.#pos[1] = 2;
 		}
 		this.move(this.dx, this.dy);
-		if (this.hitTime > 0) --this.hitTime;
+		if (hasCollided) {
+			this.hitTime = 60;
+		} else if (this.hitTime > 0) {
+			--this.hitTime;
+		}
 		
 		this.#level.snapshots.push({
 			type: "qb:update_entity",
@@ -57,7 +61,7 @@ export class Entity {
 			oPos: this.#oPos,
 			pos: this.#pos,
 			vel: this.#vel,
-			collided: hasCollided
+			collided: this.hitTime
 		});
 	}
 	
@@ -108,6 +112,7 @@ export class Entity {
 	move(dx, dy) { this.#pos = [this.x + dx, this.y + dy]; }
 	
 	render(ctx, pt) {
+		ctx.globalAlpha = 0.5;
 		ctx.fillStyle = this.hitTime > 0 ? "#FFFF9f" : "#FF9f9f";
 		
 		ctx.fillRect(-this.width / 2, 0, this.width, this.height);

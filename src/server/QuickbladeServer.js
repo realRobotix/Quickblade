@@ -10,6 +10,10 @@ serverlevel.addTicked(controlledEntity);
 serverlevel.snapshots.push(controlledEntity.getLoadSnapshot());
 input.setEntity(controlledEntity);
 
+var otherEntity = new Entity(6, 2, 2, 3, serverlevel);
+serverlevel.addTicked(otherEntity);
+serverlevel.snapshots.push(otherEntity.getLoadSnapshot());
+
 const TICK_TARGET = 30;
 
 var stopped = false;

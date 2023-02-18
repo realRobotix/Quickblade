@@ -9,21 +9,25 @@ if (!window.Worker) {
 	stopErr("Web Workers are not supported by this browser");
 }
 
-const TICK_MS = 33;
+const TICK_DT = 1 / 33;
 
 import { Level } from "../common/Level.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+const clientlevel = new Level([]);
+var inputFlags = 0;
+
+var lastFrameMs = new Date().getTime();
+var lastTickMs = new Date().getTime();
+
 const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" });
 
 worker.onmessage = evt => {
 	switch (evt.data.type) {
 	case "qb:update_client":
-		startTickMs = lastTickMs;
 		lastTickMs = evt.data.time;
-		dt = 1 / (lastTickMs - startTickMs)
 		clientlevel.loadEntities(evt.data.entityData);
 		break;
 	}
@@ -33,36 +37,26 @@ worker.onerror = err => {
 	console.log(`Caught error from worker thread: ${err.message}`);
 };
 
-const clientlevel = new Level([]);
-var inputFlags = 0;
-
-var lastFrameMs = new Date().getTime();
-var startTickMs = new Date().getTime();
-var lastTickMs = new Date().getTime();
-var dt = 0;
-
 var stopped = false;
 
 function mainRender() {
 	let curMs = new Date().getTime();
-	let pt = (curMs - startTickMs) * dt;
+	let pt = (curMs - lastTickMs) * TICK_DT;
 	
 	ctx.clearRect(0, 0, screen.width, screen.height);
 	
 	ctx.save();
-	
-	ctx.save();
-	ctx.fillStyle = "black";
-	ctx.globalAlpha = 1;
-	ctx.font = "12px Times New Roman";
-	ctx.fillText((curMs - lastFrameMs).toString(), 0, 30);
-	ctx.restore();
 	
 	if (clientlevel) {
 		ctx.save();
 		clientlevel.render(ctx, pt);	
 		ctx.restore();
 	}
+	
+	ctx.fillStyle = "black";
+	ctx.globalAlpha = 1;
+	ctx.font = "12px Times New Roman";
+	ctx.fillText(`FPS: ${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 30);
 	
 	ctx.restore();
 	

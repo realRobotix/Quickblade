@@ -51,9 +51,8 @@ export class Level {
 				if (!entity) break;
 				entity.setOldPos(data.oPos[0], data.oPos[1]);
 				entity.setPos(data.pos[0], data.pos[1]);
-				//console.log(data.vel);
 				entity.setVelocity(data.vel[0], data.vel[1]);
-				if (data.hasCollided) entity.hitTime = 60;
+				entity.hitTime = data.collided;
 				break;
 			}
 		}
@@ -63,15 +62,11 @@ export class Level {
 		ctx.scale(SCALE, -SCALE);
 		ctx.translate(0, -15);
 		
-		ctx.save();
 		ctx.fillStyle = "#cfffff";
-		ctx.fillRect(0, 0, 16, 14);
-		ctx.restore();
+		ctx.fillRect(0, 0, 16, 16);
 		
-		ctx.save();
 		ctx.fillStyle = "#7f7f7f";
 		ctx.fillRect(0, 0, 16, 2);
-		ctx.restore();
 		
 		ctx.save();
 		for (const entity of this.#loaded.values()) {
