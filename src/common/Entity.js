@@ -1,47 +1,64 @@
-import AABB from "./collision.js";
-import Level from "./level.js";
+import AABB from "./Collision.js";
 
 let COUNTER = 0;
 
-export default class Entity {
+export class Entity {
 	
 	#pos;
 	#oPos;
 	#vel;
 	#level;
-	#id = COUNTER++;
-	#aPriori = 0;
+	#id;
+	hitTime = 0;
 	width;
 	height;
 	noGravity = false;
 	
-	constructor(x, y, w, h, level) {
-		this.pos = [x, y];
-		this.oPos = [this.pos[0], this.pos[1]];
-		this.vel = [0, 0];
+	constructor(x, y, w, h, level, id) {
+		this.#pos = [x, y];
+		this.#oPos = [this.#pos[0], this.#pos[1]];
+		this.#vel = [0, 0];
 		this.width = w;
 		this.height = h;
 		this.#level = level;
+		this.#id = id ? id : COUNTER++;
+	}
+	
+	getLoadSnapshot() {
+		return {
+			type: "qb:load_entity",
+			id: this.#id,
+			pos: [this.#pos[0], this.#pos[1]],
+			dims: [this.width, this.height]
+		};
 	}
 	
 	get id() { return this.#id; }
 	
 	
 	tick() {
-		this.oPos = [this.pos[0], this.pos[1]];
+		this.#oPos = [this.#pos[0], this.#pos[1]];
 		
-		//let genAABB = this.getAABB().expandTowards(this.vel[0], this.vel[1]);	
-		//let collided = this.#level.getEntitiesIn(genAABB).filter(e => e !== this).find(e => this.collide(e));
-		//if (collided !== undefined) {
-		//	this.#aPriori = 60;
-		//}
+		let genAABB = this.getAABB().expandTowards(this.#vel[0], this.#vel[1]);	
+		let collided = this.#level.getEntitiesIn(genAABB).filter(e => e !== this).find(e => this.collide(e));
+		let hasCollided = !!collided;
 		
 		if (!this.noGravity) {
-			this.vel[1] = this.isOnGround() && this.dy <= 0.0001 ? 0 : this.dy - 0.02;
-			if (this.isOnGround()) this.pos[1] = 2;
+			let flag = this.isOnGround();
+			this.#vel[1] = flag && this.dy <= 0.0001 ? 0 : this.dy - 0.02;
+			if (flag) this.#pos[1] = 2;
 		}
 		this.move(this.dx, this.dy);
-		if (this.#aPriori > 0) --this.#aPriori;
+		if (this.hitTime > 0) --this.hitTime;
+		
+		this.#level.snapshots.push({
+			type: "qb:update_entity",
+			id: this.#id,
+			oPos: this.#oPos,
+			pos: this.#pos,
+			vel: this.#vel,
+			collided: hasCollided
+		});
 	}
 	
 	isOnGround() {
@@ -75,23 +92,23 @@ export default class Entity {
 		return x1 <= y2 && y1 <= x2;
 	}
 	
-	get x() { return this.pos[0]; }
-	get y() { return this.pos[1]; }
+	get x() { return this.#pos[0]; }
+	get y() { return this.#pos[1]; }
 	
-	get xo() { return this.oPos[0]; }
-	get yo() { return this.oPos[1]; }
+	get xo() { return this.#oPos[0]; }
+	get yo() { return this.#oPos[1]; }
 	
-	get dx() { return this.vel[0]; }
-	get dy() { return this.vel[1]; }
+	get dx() { return this.#vel[0]; }
+	get dy() { return this.#vel[1]; }
 	get level() { return this.#level; }
 	
-	setVelocity(dx, dy) { this.vel = [dx, dy]; }
-	
-	setPos(x, y) { this.pos = [x, y]; }
-	move(dx, dy) { this.pos = [this.x + dx, this.y + dy]; }
+	setVelocity(dx, dy) { this.#vel = [dx, dy]; }
+	setPos(x, y) { this.#pos = [x, y]; }
+	setOldPos(xo, yo) { this.#oPos = [xo, yo]; }
+	move(dx, dy) { this.#pos = [this.x + dx, this.y + dy]; }
 	
 	render(ctx, pt) {
-		ctx.fillStyle = this.#aPriori > 0 ? "#FFFF9f" : "#FF9f9f";
+		ctx.fillStyle = this.hitTime > 0 ? "#FFFF9f" : "#FF9f9f";
 		
 		ctx.fillRect(-this.width / 2, 0, this.width, this.height);
 		

@@ -1,35 +1,43 @@
 import ServerInputHandler from "./ServerInputHandler.js";
 import { Level } from "../common/Level.js";
+import { Entity } from "../common/Entity.js";
 
 const serverlevel = new Level([]);
-const inputhandler = new ServerInputHandler(null);
+const input = new ServerInputHandler();
 
-const TICK_TARGET = 33;
+var controlledEntity = new Entity(4, 2, 1, 2, serverlevel);
+serverlevel.addTicked(controlledEntity);
+serverlevel.snapshots.push(controlledEntity.getLoadSnapshot());
+input.setEntity(controlledEntity);
+
+const TICK_TARGET = 30;
 
 var stopped = false;
 
 onmessage = evt => {
 	switch (evt.data.type) {
 	case "qb:input_update":
-		inputhandler.updateInput(evt.data.state | 0);
+		input.updateInput(evt.data.state | 0);
 		break;
 	}
-}
+};
 
 function mainloop() {
-	while (!stopped) {
-		if (serverlevel) {
-			let startMs = new Date().getTime();
-			serverlevel.tick();
-			
-			while (new Date().getTime() - startMs < TICK_TARGET) {}
-			
-			postMessage({
-				type: "qb:set_time",
-				time: new Date().getTime()
-			});
-		}
+	let startMs = new Date().getTime();
+	input.tick();
+	if (serverlevel) {
+		serverlevel.tick();	
 	}
+	while (new Date().getTime() - startMs < TICK_TARGET) {}
+	if (serverlevel) {
+		postMessage({
+			type: "qb:update_client",
+			time: new Date().getTime(),
+			entityData: serverlevel.snapshots
+		});
+		serverlevel.snapshots.splice(0, serverlevel.snapshots.length);
+	}
+	setTimeout(mainloop, 0);
 }
 
 mainloop();

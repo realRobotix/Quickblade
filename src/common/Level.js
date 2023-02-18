@@ -1,9 +1,12 @@
+import { Entity } from "./Entity.js";
+
 const SCALE = 32;
 
 export class Level {
 
 	#chunks;
-	#loaded = [];
+	#loaded = new Map();
+	snapshots = [];
 	
 	constructor(cs) {
 		this.chunks = cs;
@@ -12,18 +15,49 @@ export class Level {
 	tick() {
 		let d = new Date();
 		let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
-		console.log(`${s} Ticking ${this.#loaded.length} entities`);
-		for (const entity of this.#loaded) {
+		//console.log(`${s} Ticking ${this.#loaded.size} entities`);
+		for (const entity of this.#loaded.values()) {
 			entity.tick();
 		}
 	}
 	
-	getEntities() { return this.#loaded; }
+	getEntities() {
+		let entities = [];
+		for (const entity of this.#loaded.values()) {
+			entities.push(entity);
+		}
+		return entities;
+	}
+	
 	getEntitiesMatching(pred) { return this.getEntities().filter(pred); }	
 	getEntitiesIn(aabb) { return this.getEntitiesMatching(e => e.getAABB().collideBox(aabb)); }
 	
-	addTicked(entity) { this.#loaded.push(entity); }
-	removeTicked(entity) { this.#loaded = this.loaded.filter(e => e != entity); }
+	addTicked(entity) { this.#loaded.set(entity.id, entity); }
+	removeTicked(entity) { this.#loaded.delete(entity.id); }
+	getEntityById(id) { return this.#loaded.get(id); }
+	
+	loadEntities(entityData) {
+		for (const data of entityData) {
+			switch (data.type) {
+			case "qb:load_entity":			
+				let d = new Date();
+				let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
+				console.log(`${s} Loading entity with id ${data.id} on client`);
+				let newEntity = new Entity(data.pos[0], data.pos[1], data.dims[0], data.dims[1], this, data.id);
+				this.addTicked(newEntity);
+				break;
+			case "qb:update_entity":
+				let entity = this.getEntityById(data.id);
+				if (!entity) break;
+				entity.setOldPos(data.oPos[0], data.oPos[1]);
+				entity.setPos(data.pos[0], data.pos[1]);
+				//console.log(data.vel);
+				entity.setVelocity(data.vel[0], data.vel[1]);
+				if (data.hasCollided) entity.hitTime = 60;
+				break;
+			}
+		}
+	}
 	
 	render(ctx, pt) {
 		ctx.scale(SCALE, -SCALE);
@@ -40,7 +74,7 @@ export class Level {
 		ctx.restore();
 		
 		ctx.save();
-		for (const entity of this.#loaded) {
+		for (const entity of this.#loaded.values()) {
 			ctx.save();
 			let lx = entity.xo + (entity.x - entity.xo) * pt;
 			let ly = entity.yo + (entity.y - entity.yo) * pt; 
