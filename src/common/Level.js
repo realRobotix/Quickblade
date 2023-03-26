@@ -1,6 +1,7 @@
 import { Entity } from "./Entity.js";
 
 const SCALE = 32;
+const MAX_ITERS = 6;
 
 export class Level {
 
@@ -16,9 +17,79 @@ export class Level {
 		let d = new Date();
 		let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
 		//console.log(`${s} Ticking ${this.#loaded.size} entities`);
-		for (const entity of this.#loaded.values()) {
+		
+		this.#loaded.forEach((entity, id, m) => {
+			/* let disp = entity.displacement(1);
+			entity.setPos(disp[0], disp[1]);
+			entity.newPath(); */
+			
 			entity.tick();
-		}
+		});
+		
+		let startTime = 0;
+		
+		/*for (let i = 0; i < MAX_ITERS; ++i) {
+			
+			let movementBoxes = new Map();
+			let dt = 1 - startTime;
+			
+			this.#loaded.forEach((entity, id, m) => {
+				let disp = entity.displacement(startTime);
+				movementBoxes.put(id, entity.getAABB().move(disp[0], disp[1]).expandTowards(entity.dx * dt, entity.dy * dt));
+			});
+			
+			let checkmap = new Map();
+			movementBoxes.forEach((box, id, m) => {
+				checkmap.set(id, []);
+				movementBoxes.forEach((box1, id1, m1) => {
+					if (id !== id1 && box.collideBox(box1)) checkmap.get(id).push(id1);
+				});
+			});
+			
+			let earliestCollisionTimes = new Map();		
+			checkmap.forEach((checks, id, m) => {
+				let entity = this.#loaded.get(id);
+				let eId = null;
+				let et = -1; // TODO: check with level first if physics enabled
+				for (const id1 of checks) {
+					let ct = entity.collide(this.#loaded.get(id1));
+					if (ct === -1 || ct >= et) continue;
+					et = ct;
+					eId = id1;
+				}
+				if (et !== -1) earliestCollisionTimes.set(id, { withId: eId, time: et });
+			});
+			
+			let aTimes = [];
+			for (const entry of earliestCollisionTimes.entries()) {
+				aTimes.push(entry);
+			}
+			aTimes.sort((a, b) => (a[1].time > b[1].time) - (a[1].time < b[1].time));
+			
+			let etFinal = null;
+			for (const et of aTimes) {
+				let entity = this.#loaded.get(et[0]);
+				if (!entity) continue;
+				if (!et[1].withId && entity.onCollideLevel()) {
+					etFinal = et;
+					break;
+				}
+				let other = this.#loaded.get(et[1].withId);
+				if (other && entity.onCollideEntity(other)) {
+					etFinal = et;
+					break;
+				}
+			}
+			if (!etFinal) break;
+			startTime = etFinal[1].time;
+			
+			let affected = this.#loaded.get(etFinal[0]);
+			if (affected) {
+				affected.updatePath(startTime);
+			}
+		}*/
+		
+		
 	}
 	
 	getEntities() {
@@ -49,8 +120,8 @@ export class Level {
 			case "qb:update_entity":
 				let entity = this.getEntityById(data.id);
 				if (!entity) break;
-				entity.setOldPos(data.oPos[0], data.oPos[1]);
 				entity.setPos(data.pos[0], data.pos[1]);
+				entity.setOldPos(data.oPos[0], data.oPos[1]);
 				entity.setVelocity(data.vel[0], data.vel[1]);
 				entity.hitTime = data.collided;
 				break;
@@ -71,9 +142,8 @@ export class Level {
 		ctx.save();
 		for (const entity of this.#loaded.values()) {
 			ctx.save();
-			let lx = entity.xo + (entity.x - entity.xo) * pt;
-			let ly = entity.yo + (entity.y - entity.yo) * pt; 
-			ctx.translate(lx, ly);
+			let s = entity.displacement(pt);
+			ctx.translate(s[0], s[1]);
 			entity.render(ctx, pt);
 			ctx.restore();
 		}

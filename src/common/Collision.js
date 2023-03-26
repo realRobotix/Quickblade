@@ -26,5 +26,9 @@ export default class AABB {
 		let nh = ey > 0 ? this.height + ey : this.height;
 		return new AABB(nx, ny, nw, nh);
 	}
+	
+	move(x, y) {
+		return new AABB(this.topLeft[0] + x, this.topLeft[1] + y, this.width, this.height);
+	}
 
 }

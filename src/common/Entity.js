@@ -4,22 +4,28 @@ let COUNTER = 0;
 
 export class Entity {
 	
+	// TODO: replace pos, oPos, and vel with path system
+	
 	#pos;
 	#oPos;
 	#vel;
+	//#path = new Timeline();
 	#level;
 	#id;
 	hitTime = 0;
-	width;
-	height;
+	#width;
+	#height;
 	noGravity = false;
 	
 	constructor(x, y, w, h, level, id) {
 		this.#pos = [x, y];
-		this.#oPos = [this.#pos[0], this.#pos[1]];
+		this.#oPos = [x, y];
 		this.#vel = [0, 0];
-		this.width = w;
-		this.height = h;
+		
+		//this.newPath();
+		
+		this.#width = w;
+		this.#height = h;
 		this.#level = level;
 		this.#id = id ? id : COUNTER++;
 	}
@@ -29,7 +35,7 @@ export class Entity {
 			type: "qb:load_entity",
 			id: this.#id,
 			pos: [this.#pos[0], this.#pos[1]],
-			dims: [this.width, this.height]
+			dims: [this.#width, this.#height]
 		};
 	}
 	
@@ -40,7 +46,7 @@ export class Entity {
 		this.#oPos = [this.#pos[0], this.#pos[1]];
 		
 		let genAABB = this.getAABB().expandTowards(this.#vel[0], this.#vel[1]);	
-		let collided = this.#level.getEntitiesIn(genAABB).filter(e => e !== this).filter(e => this.collide(e));
+		let collided = this.#level.getEntities().filter(e => e !== this).filter(e => this.collide(e));
 		let hasCollided = collided.length > 0;
 		
 		if (!this.noGravity) {
@@ -58,8 +64,8 @@ export class Entity {
 		this.#level.snapshots.push({
 			type: "qb:update_entity",
 			id: this.#id,
-			oPos: this.#oPos,
 			pos: this.#pos,
+			oPos: this.#oPos,
 			vel: this.#vel,
 			collided: this.hitTime
 		});
@@ -70,7 +76,7 @@ export class Entity {
 	}
 	
 	getAABB() {
-		return new AABB(this.x - this.width / 2, this.y - this.height, this.width, this.height);
+		return new AABB(this.x - this.#width / 2, this.y - this.#height, this.#width, this.#height);
 	}
 	
 	collide(other) {
@@ -93,29 +99,44 @@ export class Entity {
 		y1 = Math.max(0, y1);
 		y2 = Math.min(1, y2);
 		
-		return x1 <= y2 && y1 <= x2;
+		return x1 <= y2 && y1 <= x2; //? Math.max(x1, y1) : -1;
+	}
+	
+	onCollideEntity(other) {
+		return false;
+	}
+	
+	onCollideLevel() {
+		return false;
 	}
 	
 	get x() { return this.#pos[0]; }
 	get y() { return this.#pos[1]; }
+	setPos(x, y) { this.#pos = [x, y]; }
+	move(dx, dy) { this.#pos = [this.x + dx, this.y + dy]; }
 	
-	get xo() { return this.#oPos[0]; }
-	get yo() { return this.#oPos[1]; }
+	setOldPos(ox, oy) { this.#oPos = [ox, oy]; }
 	
 	get dx() { return this.#vel[0]; }
 	get dy() { return this.#vel[1]; }
-	get level() { return this.#level; }
-	
 	setVelocity(dx, dy) { this.#vel = [dx, dy]; }
-	setPos(x, y) { this.#pos = [x, y]; }
-	setOldPos(xo, yo) { this.#oPos = [xo, yo]; }
-	move(dx, dy) { this.#pos = [this.x + dx, this.y + dy]; }
+	
+/* 	newPath() {
+		this.#path.clear();
+		this.#path.set(0, this.#vel);
+	}
+	
+	updatePath(t) {
+		this.#path.set(t, this.#vel);
+	} */
+	
+	get level() { return this.#level; }
 	
 	render(ctx, pt) {
 		ctx.globalAlpha = 0.5;
 		ctx.fillStyle = this.hitTime > 0 ? "#FFFF9f" : "#FF9f9f";
 		
-		ctx.fillRect(-this.width / 2, 0, this.width, this.height);
+		ctx.fillRect(-this.#width / 2, 0, this.#width, this.#height);
 		
 		ctx.fillStyle = "#00FF00";
 		ctx.globalAlpha = 1;
@@ -123,6 +144,20 @@ export class Entity {
 		ctx.beginPath();
 		ctx.arc(0, 0, 0.125, 0, 2 * Math.PI);
 		ctx.fill();
+	}
+	
+	displacement(pt) {
+		/* let sx = this.x;
+		let sy = this.y;
+		for (const seg of this.#path) {
+			if (pt < seg.ts) break;
+			let dt = Math.min(pt, seg.te) - seg.ts;
+			sx += seg.vel[0] * dt;
+			sy += seg.vel[1] * dt;
+		}
+		return [sx, sy]; */
+		let ipt = 1 - pt;
+		return [this.#oPos[0] * ipt + this.x * pt, this.#oPos[1] * ipt + this.y * pt];
 	}
 	
 }
