@@ -12,11 +12,16 @@ if (!window.Worker) {
 const TICK_DT = 1 / 33;
 
 import { Level } from "../common/Level.js";
+import Camera from "./Camera.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const clientlevel = new Level([]);
+const camera = new Camera()
+clientlevel.setCamera(camera);
+var renderLevel = true;
+
 var inputFlags = 0;
 
 var lastFrameMs = new Date().getTime();
@@ -29,6 +34,9 @@ worker.onmessage = evt => {
 	case "qb:update_client":
 		lastTickMs = evt.data.time;
 		clientlevel.loadEntities(evt.data.entityData);
+		break;
+	case "qb:update_camera":
+		camera.setState(evt.data);
 		break;
 	}
 };
@@ -47,7 +55,7 @@ function mainRender() {
 	
 	ctx.save();
 	
-	if (clientlevel) {
+	if (clientlevel && renderLevel) {
 		ctx.save();
 		clientlevel.render(ctx, pt);	
 		ctx.restore();

@@ -40,6 +40,7 @@ function mainloop() {
 			entityData: serverlevel.snapshots
 		});
 		serverlevel.snapshots.splice(0, serverlevel.snapshots.length);
+		postMessage(controlledEntity.getCameraSnapshot());
 	}
 	setTimeout(mainloop, 0);
 }

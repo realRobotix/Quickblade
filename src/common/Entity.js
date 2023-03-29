@@ -41,6 +41,14 @@ export class Entity {
 	
 	get id() { return this.#id; }
 	
+	getCameraSnapshot() {
+		return {
+			type: "qb:update_camera",
+			pos: this.#pos,
+			oPos: this.#oPos
+		}
+	}
+	
 	
 	tick() {
 		this.#oPos = [this.#pos[0], this.#pos[1]];

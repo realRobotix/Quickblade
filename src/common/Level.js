@@ -7,6 +7,7 @@ export class Level {
 
 	#chunks;
 	#loaded = new Map();
+	#camera;
 	snapshots = [];
 	
 	constructor(cs) {
@@ -135,6 +136,8 @@ export class Level {
 		
 		ctx.fillStyle = "#cfffff";
 		ctx.fillRect(0, 0, 16, 16);
+
+		if (this.#camera) this.#camera.lerp(ctx, pt);
 		
 		ctx.fillStyle = "#7f7f7f";
 		ctx.fillRect(0, 0, 16, 2);
@@ -147,8 +150,9 @@ export class Level {
 			entity.render(ctx, pt);
 			ctx.restore();
 		}
-		ctx.restore();
-		
+		ctx.restore();		
 	}
+	
+	setCamera(camera) { this.#camera = camera; }
 
 }
