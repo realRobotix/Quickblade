@@ -13,6 +13,9 @@ const TICK_DT = 1 / 33;
 
 import { Level } from "../common/Level.js";
 import Camera from "./Camera.js";
+import QBRandom from "../common/QBRandom.js";
+
+const RANDOM = new QBRandom(null);
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
