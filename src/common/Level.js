@@ -1,6 +1,5 @@
 import { Entity } from "./Entity.js";
 
-const SCALE = 32;
 const MAX_ITERS = 6;
 
 export class Level {
@@ -121,36 +120,31 @@ export class Level {
 			case "qb:update_entity":
 				let entity = this.getEntityById(data.id);
 				if (!entity) break;
-				entity.setPos(data.pos[0], data.pos[1]);
-				entity.setOldPos(data.oPos[0], data.oPos[1]);
-				entity.setVelocity(data.vel[0], data.vel[1]);
+				entity.setPos(data.pos);
+				entity.setOldPos(data.oldPos);
+				entity.setVelocity(data.vel);
 				entity.hitTime = data.collided;
 				break;
 			}
 		}
 	}
 	
-	render(ctx, pt) {
-		ctx.scale(SCALE, -SCALE);
-		ctx.translate(0, -15);
-		
+	render(ctx, dt) {
 		ctx.fillStyle = "#cfffff";
 		ctx.fillRect(0, 0, 16, 16);
 
-		if (this.#camera) this.#camera.lerp(ctx, pt);
+		if (this.#camera) this.#camera.lerp(ctx, dt);
 		
 		ctx.fillStyle = "#7f7f7f";
 		ctx.fillRect(0, 0, 16, 2);
 		
-		ctx.save();
 		for (const entity of this.#loaded.values()) {
 			ctx.save();
-			let s = entity.displacement(pt);
+			let s = entity.displacement(dt);
 			ctx.translate(s[0], s[1]);
-			entity.render(ctx, pt);
+			entity.render(ctx, dt);
 			ctx.restore();
 		}
-		ctx.restore();		
 	}
 	
 	setCamera(camera) { this.#camera = camera; }

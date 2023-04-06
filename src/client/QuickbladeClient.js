@@ -10,6 +10,7 @@ if (!window.Worker) {
 }
 
 const TICK_DT = 1 / 33;
+const SCALE = 32;
 
 import { Level } from "../common/Level.js";
 import Camera from "./Camera.js";
@@ -20,15 +21,20 @@ const RANDOM = new QBRandom(null);
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const clientlevel = new Level([]);
+const clientLevel = new Level([]);
 const camera = new Camera()
-clientlevel.setCamera(camera);
-var renderLevel = true;
+clientLevel.setCamera(camera);
+let renderLevel = true;
 
-var inputFlags = 0;
+let inputFlags = 0;
 
-var lastFrameMs = new Date().getTime();
-var lastTickMs = new Date().getTime();
+let inputMode = "jump";
+let mouseX = 0;
+let mouseY = 0;
+let tracked = null;
+
+let lastFrameMs = new Date().getTime();
+let lastTickMs = new Date().getTime();
 
 const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" });
 
@@ -36,10 +42,10 @@ worker.onmessage = evt => {
 	switch (evt.data.type) {
 	case "qb:update_client":
 		lastTickMs = evt.data.time;
-		clientlevel.loadEntities(evt.data.entityData);
+		clientLevel.loadEntities(evt.data.entityData);
 		break;
 	case "qb:update_camera":
-		camera.setState(evt.data);
+		updateCamera(evt.data.id);
 		break;
 	}
 };
@@ -48,19 +54,57 @@ worker.onerror = err => {
 	console.log(`Caught error from worker thread: ${err.message}`);
 };
 
-var stopped = false;
+let stopped = false;
 
 function mainRender() {
 	let curMs = new Date().getTime();
-	let pt = (curMs - lastTickMs) * TICK_DT;
+	let dt = (curMs - lastTickMs) * TICK_DT;
 	
 	ctx.clearRect(0, 0, screen.width, screen.height);
 	
 	ctx.save();
 	
-	if (clientlevel && renderLevel) {
+	if (clientLevel && renderLevel) {
 		ctx.save();
-		clientlevel.render(ctx, pt);	
+		ctx.scale(SCALE, -SCALE);
+		ctx.translate(0, -15);
+
+		ctx.save();
+		clientLevel.render(ctx, dt);	
+		ctx.restore();
+		
+		if (tracked) {
+			ctx.strokeStyle = "#FFFF00";
+			ctx.globalAlpha = 1;
+			ctx.lineWidth = 0.125;
+			
+			ctx.save();
+			let ds = tracked.displacement(dt);
+			let dm = [mouseX * 16 - 8, mouseY * -15 + 8];
+			
+			camera.lerp(ctx, dt);
+			ctx.translate(ds[0], ds[1]);
+			
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(dm[0], dm[1]);
+			
+			ctx.stroke();
+			
+			ctx.restore();
+		}
+		
+		ctx.save();
+		ctx.translate(mouseX * 16, mouseY * -15 + 15);
+		if (inputMode === "jump") {
+			ctx.fillStyle = "#00FF00";
+			ctx.globalAlpha = 0.2;
+			ctx.beginPath();
+			ctx.arc(0, 0, 1, 0, 2 * Math.PI);
+			ctx.fill();
+		}
+		ctx.restore();
+		
 		ctx.restore();
 	}
 	
@@ -75,26 +119,53 @@ function mainRender() {
 	if (!stopped) window.requestAnimationFrame(mainRender);
 }
 
-document.addEventListener("keydown", evt => {
+function updateKbInput() {
+	worker.postMessage({
+		type: "qb:kb_input_update",
+		state: inputFlags >> 0
+	});
+}
+
+function updateCamera(id) {
+	if (!clientLevel) return;
+	tracked = clientLevel.getEntityById(id);
+	if (!tracked) return;
+	camera.setState([tracked.x, tracked.y], [tracked.ox, tracked.oy]);
+}
+
+document.onkeydown = evt => {
 	if (evt.code === "KeyA") inputFlags |= 1; // Left
 	if (evt.code === "KeyD") inputFlags |= 2; // Right
 	if (evt.code === "KeyW") inputFlags |= 4; // Up
-		
-	worker.postMessage({
-		type: "qb:input_update",
-		state: inputFlags >> 0
-	});
-});
+	updateKbInput();
+};
 
-document.addEventListener("keyup", evt => {
+document.onkeyup = evt => {
 	if (evt.code === "KeyA") inputFlags &= ~1; // Left
 	if (evt.code === "KeyD") inputFlags &= ~2; // Right
 	if (evt.code === "KeyW") inputFlags &= ~4; // Up
-	
-	worker.postMessage({
-		type: "qb:input_update",
-		state: inputFlags >> 0
-	});
-});
+	updateKbInput();
+};
+
+document.oncontextmenu = evt => {
+	inputFlags = 0;
+	updateKbInput();
+};
+
+canvas.onmousemove = evt => {
+	mouseX = evt.offsetX / canvas.width;
+	mouseY = evt.offsetY / canvas.height;
+};
+
+canvas.onclick = evt => {
+	if (inputMode === "jump" && clientLevel && camera && tracked) {
+		let ds = tracked.displacement(0);
+		let inputVec = [camera.x - ds[0] + mouseX * 16 - 8, camera.y - ds[1] + mouseY * -15 + 8];
+		worker.postMessage({
+			type: "qb:jump_input",
+			vec: inputVec
+		});
+	}
+};
 
 window.requestAnimationFrame(mainRender);

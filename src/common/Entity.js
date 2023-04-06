@@ -4,10 +4,10 @@ let COUNTER = 0;
 
 export class Entity {
 	
-	// TODO: replace pos, oPos, and vel with path system
+	// TODO: replace pos, oldPos, and vel with path system
 	
 	#pos;
-	#oPos;
+	#oldPos;
 	#vel;
 	//#path = new Timeline();
 	#level;
@@ -19,7 +19,7 @@ export class Entity {
 	
 	constructor(x, y, w, h, level, id) {
 		this.#pos = [x, y];
-		this.#oPos = [x, y];
+		this.#oldPos = [x, y];
 		this.#vel = [0, 0];
 		
 		//this.newPath();
@@ -44,14 +44,12 @@ export class Entity {
 	getCameraSnapshot() {
 		return {
 			type: "qb:update_camera",
-			pos: this.#pos,
-			oPos: this.#oPos
+			id: this.#id
 		}
-	}
-	
+	}	
 	
 	tick() {
-		this.#oPos = [this.#pos[0], this.#pos[1]];
+		this.#oldPos = [this.#pos[0], this.#pos[1]];
 		
 		let genAABB = this.getAABB().expandTowards(this.#vel[0], this.#vel[1]);	
 		let collided = this.#level.getEntities().filter(e => e !== this).filter(e => this.collide(e));
@@ -73,7 +71,7 @@ export class Entity {
 			type: "qb:update_entity",
 			id: this.#id,
 			pos: this.#pos,
-			oPos: this.#oPos,
+			oldPos: this.#oldPos,
 			vel: this.#vel,
 			collided: this.hitTime
 		});
@@ -120,14 +118,16 @@ export class Entity {
 	
 	get x() { return this.#pos[0]; }
 	get y() { return this.#pos[1]; }
-	setPos(x, y) { this.#pos = [x, y]; }
+	setPos(pos) { this.#pos = pos; }
 	move(dx, dy) { this.#pos = [this.x + dx, this.y + dy]; }
 	
-	setOldPos(ox, oy) { this.#oPos = [ox, oy]; }
+	get ox() { return this.#oldPos[0]; }
+	get oy() { return this.#oldPos[1]; }
+	setOldPos(oldPos) { this.#oldPos = oldPos; }
 	
 	get dx() { return this.#vel[0]; }
 	get dy() { return this.#vel[1]; }
-	setVelocity(dx, dy) { this.#vel = [dx, dy]; }
+	setVelocity(vel) { this.#vel = vel; }
 	
 /* 	newPath() {
 		this.#path.clear();
@@ -140,7 +140,7 @@ export class Entity {
 	
 	get level() { return this.#level; }
 	
-	render(ctx, pt) {
+	render(ctx, dt) {
 		ctx.globalAlpha = 0.5;
 		ctx.fillStyle = this.hitTime > 0 ? "#FFFF9f" : "#FF9f9f";
 		
@@ -154,18 +154,18 @@ export class Entity {
 		ctx.fill();
 	}
 	
-	displacement(pt) {
+	displacement(dt) {
 		/* let sx = this.x;
 		let sy = this.y;
 		for (const seg of this.#path) {
-			if (pt < seg.ts) break;
-			let dt = Math.min(pt, seg.te) - seg.ts;
+			if (dt < seg.ts) break;
+			let dt = Math.min(dt, seg.te) - seg.ts;
 			sx += seg.vel[0] * dt;
 			sy += seg.vel[1] * dt;
 		}
 		return [sx, sy]; */
-		let ipt = 1 - pt;
-		return [this.#oPos[0] * ipt + this.x * pt, this.#oPos[1] * ipt + this.y * pt];
+		let invPartialTicks = 1 - dt;
+		return [this.ox * invPartialTicks + this.x * dt, this.oy * invPartialTicks + this.y * dt];
 	}
 	
 }
