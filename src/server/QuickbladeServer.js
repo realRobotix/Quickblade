@@ -1,18 +1,19 @@
 import ServerInputHandler from "./ServerInputHandler.js";
 import { Level } from "../common/Level.js";
-import { Entity } from "../common/Entity.js";
+import * as QBEntities from "../common/index/QBEntities.js";
 const serverLevel = new Level([]);
 
 const input = new ServerInputHandler();
 
-let controlledEntity = new Entity(4, 2, 1, 2, serverLevel);
+let controlledEntity = QBEntities.PLAYER.create(4, 2, serverLevel);
 serverLevel.addTicked(controlledEntity);
 serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
+
 input.setEntity(controlledEntity);
 
-let otherEntity = new Entity(6, 2, 2, 3, serverLevel);
+/* let otherEntity = new Entity(6, 2, 2, 3, serverLevel);
 serverLevel.addTicked(otherEntity);
-serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
+serverLevel.snapshots.push(otherEntity.getLoadSnapshot()); */
 
 const TICK_TARGET = 30;
 

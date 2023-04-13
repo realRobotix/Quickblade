@@ -1,4 +1,5 @@
-import { Entity } from "./Entity.js";
+import { Entity } from "./entity/Entity.js";
+import * as QBEntities from "./index/QBEntities.js";
 
 const MAX_ITERS = 6;
 
@@ -114,8 +115,14 @@ export class Level {
 				let d = new Date();
 				let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
 				console.log(`${s} Loading entity with id ${data.id} on client`);
-				let newEntity = new Entity(data.pos[0], data.pos[1], data.dims[0], data.dims[1], this, data.id);
-				this.addTicked(newEntity);
+				let type = QBEntities.getFromId(data.entityType);
+				if (type) {
+					let newEntity = type.create(data.pos[0], data.pos[1], this, data.id);
+					this.addTicked(newEntity);
+				} else {
+					s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
+					console.log(`${s} Error loading entity with id ${data.id} on client: Invalid type ${data.entityType}`);
+				}
 				break;
 			case "qb:update_entity":
 				let entity = this.getEntityById(data.id);
