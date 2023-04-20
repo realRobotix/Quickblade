@@ -15,6 +15,7 @@ const SCALE = 32;
 import { Level } from "../common/Level.js";
 import Camera from "./Camera.js";
 import QBRandom from "../common/QBRandom.js";
+import { Creature } from "../common/entity/Creature.js";
 
 const RANDOM = new QBRandom(null);
 
@@ -25,6 +26,8 @@ const clientLevel = new Level([]);
 const camera = new Camera()
 clientLevel.setCamera(camera);
 let renderLevel = true;
+
+let controlledEntity = null;
 
 let inputFlags = 0;
 
@@ -43,9 +46,12 @@ worker.onmessage = evt => {
 	case "qb:update_client":
 		lastTickMs = evt.data.time;
 		clientLevel.loadEntities(evt.data.entityData);
+		if (isControlling()) {
+			updateCamera(controlledEntity);
+		}
 		break;
-	case "qb:update_camera":
-		updateCamera(evt.data.id);
+	case "qb:update_controlled_entity":
+		controlledEntity = evt.data.id;
 		break;
 	}
 };
@@ -113,6 +119,14 @@ function mainRender() {
 	ctx.font = "12px Times New Roman";
 	ctx.fillText(`FPS: ${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 30);
 	
+	if (clientLevel && isControlling()) {
+		let entity = clientLevel.getEntityById(controlledEntity);
+		if (entity instanceof Creature) {
+			ctx.font = "20px Times New Roman";
+			ctx.fillText(`HP: ${entity.hp} / ${entity.maxHp}`, 0, 450);
+		}
+	}
+	
 	ctx.restore();
 	
 	lastFrameMs = curMs;
@@ -132,6 +146,8 @@ function updateCamera(id) {
 	if (!tracked) return;
 	camera.setState([tracked.x, tracked.y], [tracked.ox, tracked.oy]);
 }
+
+function isControlling() { return controlledEntity || controlledEntity == 0; }
 
 document.onkeydown = evt => {
 	if (evt.code === "KeyA") inputFlags |= 1; // Left

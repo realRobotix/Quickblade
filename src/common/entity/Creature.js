@@ -11,6 +11,24 @@ export class Creature extends Entity {
 		this.#hp = this.#maxHp;
 	}
 	
+	getUpdateSnapshot() {
+		let result = super.getUpdateSnapshot();
+		//result.hp = this.#hp;
+		//result.maxHp = this.#maxHp;
+		return result;
+	}
+	
+	readUpdateSnapshot(data) {
+		super.readUpdateSnapshot(data);
+		//this.#hp = data.hp;
+		//this.#maxHp = data.maxHp;
+	}
+	
+	get hp() { return this.#hp; }
+	set hp(hp) { this.#hp = hp; }
+	get maxHp() { return this.#maxHp }
+	set maxHp(maxHp) { this.#maxHp = maxHp; }
+	
 }
 
 export class CreatureProperties extends EntityProperties {

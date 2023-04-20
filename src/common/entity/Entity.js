@@ -44,13 +44,6 @@ export class Entity {
 	
 	get id() { return this.#id; }
 	
-	getCameraSnapshot() {
-		return {
-			type: "qb:update_camera",
-			id: this.#id
-		}
-	}
-	
 	getUpdateSnapshot() {
 		return {
 			type: "qb:update_entity",
@@ -60,6 +53,13 @@ export class Entity {
 			vel: this.#vel,
 			collided: this.hitTime
 		};
+	}
+	
+	readUpdateSnapshot(data) {
+		this.setPos(data.pos);
+		this.setOldPos(data.oldPos);
+		this.setVelocity(data.vel);
+		this.hitTime = data.collided;
 	}
 	
 	tick() {

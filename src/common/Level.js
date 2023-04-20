@@ -127,10 +127,7 @@ export class Level {
 			case "qb:update_entity":
 				let entity = this.getEntityById(data.id);
 				if (!entity) break;
-				entity.setPos(data.pos);
-				entity.setOldPos(data.oldPos);
-				entity.setVelocity(data.vel);
-				entity.hitTime = data.collided;
+				entity.readUpdateSnapshot(data);
 				break;
 			}
 		}

@@ -5,15 +5,18 @@ const serverLevel = new Level([]);
 
 const input = new ServerInputHandler();
 
+let updateControl = null;
+
 let controlledEntity = QBEntities.PLAYER.create(4, 2, serverLevel);
 serverLevel.addTicked(controlledEntity);
 serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
 
 input.setEntity(controlledEntity);
+updateControl = controlledEntity.id;
 
-/* let otherEntity = new Entity(6, 2, 2, 3, serverLevel);
-serverLevel.addTicked(otherEntity);
-serverLevel.snapshots.push(otherEntity.getLoadSnapshot()); */
+// let otherEntity = new Entity(6, 2, 2, 3, serverLevel);
+// serverLevel.addTicked(otherEntity);
+// serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 
 const TICK_TARGET = 30;
 
@@ -44,7 +47,13 @@ function mainloop() {
 			entityData: serverLevel.snapshots
 		});
 		serverLevel.snapshots.splice(0, serverLevel.snapshots.length);
-		postMessage(controlledEntity.getCameraSnapshot());
+		if (updateControl || updateControl == 0) {
+			postMessage({
+				type: "qb:update_controlled_entity",
+				id: updateControl
+			});
+			updateControl = null;
+		}
 	}
 	setTimeout(mainloop, 0);
 }
