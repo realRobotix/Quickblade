@@ -14,9 +14,9 @@ serverLevel.snapshots.push(controlledEntity.getLoadSnapshot());
 input.setEntity(controlledEntity);
 updateControl = controlledEntity.id;
 
-// let otherEntity = new Entity(6, 2, 2, 3, serverLevel);
-// serverLevel.addTicked(otherEntity);
-// serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
+let otherEntity = QBEntities.IMP.create(8, 2, serverLevel);
+serverLevel.addTicked(otherEntity);
+serverLevel.snapshots.push(otherEntity.getLoadSnapshot());
 
 const TICK_TARGET = 30;
 
@@ -24,12 +24,14 @@ let stopped = false;
 
 onmessage = evt => {
 	switch (evt.data.type) {
-	case "qb:kb_input_update":
-		input.updateInput(evt.data.state | 0);
-		break;
-	case "qb:jump_input":
-		input.handleJump(evt.data.vec);
-		break;
+		case "qb:kb_input_update": {
+			input.updateInput(evt.data.state | 0);
+			break;
+		}
+		case "qb:jump_input": {
+			input.handleJump(evt.data.vec);
+			break;
+		}
 	}
 };
 
@@ -53,6 +55,11 @@ function mainloop() {
 				id: updateControl
 			});
 			updateControl = null;
+		}
+		if (controlledEntity && !controlledEntity.isAlive()) {
+			postMessage({
+				type: "qb:player_dead"
+			});
 		}
 	}
 	setTimeout(mainloop, 0);

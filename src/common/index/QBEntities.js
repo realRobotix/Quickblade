@@ -1,5 +1,7 @@
 import EntityType from "../entity/EntityType.js";
-import { Creature, CreatureProperties } from "../entity/Creature.js";
+import { CreatureProperties } from "../entity/Creature.js";
+import { Player } from "../entity/Player.js";
+import { Monster } from "../entity/Monster.js";
 
 const types = new Map();
 
@@ -13,4 +15,5 @@ export function getFromId(id) {
 	return types.get(id);
 }
 
-export const PLAYER = register("qb:player", Creature, new CreatureProperties().maxHpCount(20).dimensions(1, 2));
+export const PLAYER = register("qb:player", Player, new CreatureProperties().maxHpCount(20).dimensions(1, 2));
+export const IMP = register("qb:imp", Monster, new CreatureProperties().maxHpCount(10).dimensions(1, 2));

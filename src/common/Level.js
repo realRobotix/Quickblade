@@ -111,24 +111,36 @@ export class Level {
 	loadEntities(entityData) {
 		for (const data of entityData) {
 			switch (data.type) {
-			case "qb:load_entity":			
-				let d = new Date();
-				let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
-				console.log(`${s} Loading entity with id ${data.id} on client`);
-				let type = QBEntities.getFromId(data.entityType);
-				if (type) {
-					let newEntity = type.create(data.pos[0], data.pos[1], this, data.id);
-					this.addTicked(newEntity);
-				} else {
-					s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
-					console.log(`${s} Error loading entity with id ${data.id} on client: Invalid type ${data.entityType}`);
+				case "qb:load_entity": {	
+					let d = new Date();
+					let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
+					console.log(`${s} Loading entity with id ${data.id} on client`);
+					let type = QBEntities.getFromId(data.entityType);
+					if (type) {
+						let newEntity = type.create(data.pos[0], data.pos[1], this, data.id);
+						this.addTicked(newEntity);
+					} else {
+						s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
+						console.log(`${s} Error loading entity with id ${data.id} on client: Invalid type ${data.entityType}`);
+					}
+					break;
 				}
-				break;
-			case "qb:update_entity":
-				let entity = this.getEntityById(data.id);
-				if (!entity) break;
-				entity.readUpdateSnapshot(data);
-				break;
+				case "qb:update_entity": {
+					let entity = this.getEntityById(data.id);
+					if (entity) entity.readUpdateSnapshot(data);
+					break;
+				}
+				case "qb:remove_entity": {
+					let entity1 = this.getEntityById(data.id);
+					if (entity1) {
+						this.removeTicked(entity1);
+						entity1.removed = true;
+						let d = new Date();
+						let s = `[${d.toLocaleTimeString("en-US", { hour12: false })}]`;
+						console.log(`${s} Killed entity with id ${data.id} on client`);
+					}
+					break;
+				}
 			}
 		}
 	}

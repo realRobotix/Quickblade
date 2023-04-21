@@ -22,10 +22,14 @@ const RANDOM = new QBRandom(null);
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const clientLevel = new Level([]);
+let clientLevel = new Level([]);
 const camera = new Camera()
 clientLevel.setCamera(camera);
-let renderLevel = true;
+
+const RENDER_LEVEL = 0;
+const RENDER_DEATH_SCREEN = 1;
+
+let gameState = RENDER_LEVEL;
 
 let controlledEntity = null;
 
@@ -43,16 +47,24 @@ const worker = new Worker("./src/server/QuickbladeServer.js", { type: "module" }
 
 worker.onmessage = evt => {
 	switch (evt.data.type) {
-	case "qb:update_client":
-		lastTickMs = evt.data.time;
-		clientLevel.loadEntities(evt.data.entityData);
-		if (isControlling()) {
-			updateCamera(controlledEntity);
+		case "qb:update_client": {
+			lastTickMs = evt.data.time;
+			if (clientLevel) clientLevel.loadEntities(evt.data.entityData);
+			if (isControlling()) {
+				updateCamera(controlledEntity);
+			}
+			break;
 		}
-		break;
-	case "qb:update_controlled_entity":
-		controlledEntity = evt.data.id;
-		break;
+		case "qb:update_controlled_entity": {
+			controlledEntity = evt.data.id;
+			break;
+		}
+		case "qb:player_dead": {
+			controlledEntity = null;
+			clientLevel = null;
+			gameState = RENDER_DEATH_SCREEN;
+			break;
+		}
 	}
 };
 
@@ -70,7 +82,7 @@ function mainRender() {
 	
 	ctx.save();
 	
-	if (clientLevel && renderLevel) {
+	if (gameState == RENDER_LEVEL && clientLevel) {
 		ctx.save();
 		ctx.scale(SCALE, -SCALE);
 		ctx.translate(0, -15);
@@ -119,12 +131,20 @@ function mainRender() {
 	ctx.font = "12px Times New Roman";
 	ctx.fillText(`FPS: ${Math.ceil(1000 / (curMs - lastFrameMs))}`, 0, 30);
 	
-	if (clientLevel && isControlling()) {
+	if (gameState == RENDER_LEVEL && clientLevel && isControlling()) {
 		let entity = clientLevel.getEntityById(controlledEntity);
 		if (entity instanceof Creature) {
 			ctx.font = "20px Times New Roman";
 			ctx.fillText(`HP: ${entity.hp} / ${entity.maxHp}`, 0, 450);
 		}
+	}
+	if (gameState == RENDER_DEATH_SCREEN) {
+		ctx.fillStyle = "black";
+		ctx.fillRect(0, 0, screen.width, screen.height);
+		
+		ctx.fillStyle = "crimson";
+		ctx.font = "40px Times New Roman";
+		ctx.fillText("YOU DIED", 150, 240);
 	}
 	
 	ctx.restore();

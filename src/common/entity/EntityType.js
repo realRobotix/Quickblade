@@ -15,5 +15,7 @@ export default class EntityType {
 	}
 	
 	get id() { return this.#id; }
+	
+	is(entity) { return this == entity.type; }
 
 }

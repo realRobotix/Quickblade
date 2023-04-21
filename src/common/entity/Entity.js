@@ -12,11 +12,11 @@ export class Entity {
 	//#path = new Timeline();
 	#level;
 	#id;
-	hitTime = 0;
 	#width;
 	#height;
 	noGravity = false;
 	#type;
+	removed = false;
 	
 	constructor(x, y, level, id, type) {
 		this.#type = type;
@@ -50,8 +50,7 @@ export class Entity {
 			id: this.#id,
 			pos: this.#pos,
 			oldPos: this.#oldPos,
-			vel: this.#vel,
-			collided: this.hitTime
+			vel: this.#vel
 		};
 	}
 	
@@ -59,15 +58,10 @@ export class Entity {
 		this.setPos(data.pos);
 		this.setOldPos(data.oldPos);
 		this.setVelocity(data.vel);
-		this.hitTime = data.collided;
 	}
 	
 	tick() {
 		this.#oldPos = [this.#pos[0], this.#pos[1]];
-		
-		let genAABB = this.getAABB().expandTowards(this.#vel[0], this.#vel[1]);	
-		let collided = this.#level.getEntities().filter(e => e !== this).filter(e => this.collide(e));
-		let hasCollided = collided.length > 0;
 		
 		if (!this.noGravity) {
 			let flag = this.isOnGround();
@@ -75,11 +69,6 @@ export class Entity {
 			if (flag) this.#pos[1] = 2;
 		}
 		this.move(this.dx, this.dy);
-		if (hasCollided) {
-			this.hitTime = 60;
-		} else if (this.hitTime > 0) {
-			--this.hitTime;
-		}
 		
 		this.#level.snapshots.push(this.getUpdateSnapshot());
 	}
@@ -147,9 +136,24 @@ export class Entity {
 	
 	get level() { return this.#level; }
 	
+	get type() { return this.#type; }
+	
+	hurt(damage) {
+	}
+
+	kill() {
+		this.removed = true;
+		this.#level.snapshots.push({
+			type: "qb:remove_entity",
+			id: this.#id
+		});
+	}
+	
+	isAlive() { return !this.removed; }
+	
 	render(ctx, dt) {
 		ctx.globalAlpha = 0.5;
-		ctx.fillStyle = this.hitTime > 0 ? "#FFFF9f" : "#FF9f9f";
+		ctx.fillStyle = this.getFillStyle();
 		
 		ctx.fillRect(-this.#width / 2, 0, this.#width, this.#height);
 		
@@ -160,6 +164,8 @@ export class Entity {
 		ctx.arc(0, 0, 0.125, 0, 2 * Math.PI);
 		ctx.fill();
 	}
+	
+	getFillStyle() { return "#FF9f9f"; }
 	
 	displacement(dt) {
 		/* let sx = this.x;
