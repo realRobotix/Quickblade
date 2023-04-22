@@ -4,7 +4,7 @@
 <head>
 	<title>rbasamoyai's Quickblade</title>
 	<link rel="stylesheet" href="/styles.css">
-	<script type="module" src="/play_quickblade.js" defer></script>
+	<script type="module" src="src/client/QuickbladeClient.js" defer></script>
 </head>
 
 <body>
@@ -13,6 +13,7 @@
 		<p style="text-align: justify;">
 			<em>is a game where you jump around in a dungeon and slash monsters to death or something, I don't know.</em><br>
 		</p>
+		<p style="display: none; font-weight: bold;" id="error_box"></p>
 	</div>
 	<div class="gamebox">
 		<canvas id="gameCanvas" width="512" height="480">Your browser does not support canvas.</canvas>

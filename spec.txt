@@ -1,0 +1,17 @@
+Level Data specification:
+
+- Level Palette
+	- Associates palette with 1 byte value (limited to 256 blocks)
+- Chunk
+	- Level sections
+	- Contains:
+		- Section index
+		- Simple Tile Data
+			- Losslessly compressed horizontally (RLE)
+			- Store value pointing to level palette
+		- Entity data
+			- Store type, position (other attributes not stored because the enemies are not saved)
+- Other level metadata
+	- Spawn position
+	- Door positions and location
+	- Exit position
